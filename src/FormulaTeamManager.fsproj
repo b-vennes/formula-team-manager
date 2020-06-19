@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="EventKeys.fs" />
+    <Compile Include="Events.fs" />
+    <Compile Include="Stream.fs" />
+    <Compile Include="EventLogger.fs" />
+    <Compile Include="EventReader.fs" />
+    <Compile Include="Controllers/Results.fs" />
+    <Compile Include="Controllers/Parameters.fs" />
+    <Compile Include="Controllers/CarController.fs" />
+    <Compile Include="Controllers/DriverController.fs" />
+    <Compile Include="Controllers/TeamController.fs" />
+    <Compile Include="Startup.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="StackExchange.Redis" Version="2.1.58" />
+  </ItemGroup>
+</Project>

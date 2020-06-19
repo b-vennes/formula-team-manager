@@ -1,0 +1,14 @@
+# Visual Studio Code
+.ionide
+.vscode
+
+# Visual Studio
+.vs
+
+# .Net build files
+[Bb]in
+[Oo]bj
+
+# .Net configuration files
+appsettings*json
+launchSettings.json
