@@ -4,13 +4,15 @@ open System
 open Microsoft.AspNetCore.Mvc
 open Microsoft.Extensions.Logging
 open FormulaTeamManager
+open FormulaTeamManager.Controllers.Results
+open FormulaTeamManager.Controllers.Parameters
 
 /// <summary>Handles command and query requests for teams.</summary>
 /// <param name="logger">The standard logging utility.</param>
 /// <param name="eventLogger">The event logging utility.</param>
 [<ApiController>]
 [<Route("[controller]")>]
-type TeamController (logger : ILogger<TeamController>, eventLogger: EventLogger) =
+type TeamController (logger : ILogger<TeamController>) =
     inherit ControllerBase()
 
     /// <summary>Performs a team name change.</summary>

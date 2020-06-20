@@ -3,11 +3,8 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="EventKeys.fs" />
-    <Compile Include="Events.fs" />
     <Compile Include="Stream.fs" />
-    <Compile Include="EventLogger.fs" />
-    <Compile Include="EventReader.fs" />
+    <Compile Include="Eventing.fs" />
     <Compile Include="Controllers/Results.fs" />
     <Compile Include="Controllers/Parameters.fs" />
     <Compile Include="Controllers/CarController.fs" />
@@ -17,6 +14,7 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="FSharp.Json" Version="0.4.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.1.58" />
   </ItemGroup>
 </Project>

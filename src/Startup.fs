@@ -21,12 +21,6 @@ type Startup private () =
 
         services.AddSingleton(redisConnection) |> ignore
 
-        services.AddSingleton<EventLogger>() |> ignore
-
-        services.AddSingleton<Stream>() |> ignore
-
-        services.AddSingleton<EventReader>() |> ignore
-
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     member this.Configure(app: IApplicationBuilder, env: IWebHostEnvironment) =
         if (env.IsDevelopment()) then

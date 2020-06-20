@@ -3,12 +3,15 @@ namespace FormulaTeamManager.Controllers
 open System
 open Microsoft.AspNetCore.Mvc
 open Microsoft.Extensions.Logging
-open FormulaTeamManager
+open FormulaTeamManager.Eventing
+open FormulaTeamManager.Controllers.Results
+open FormulaTeamManager.Controllers.Parameters
+open StackExchange.Redis
 
 /// <summary>Handles car command and query requests.</summary>
 [<ApiController>]
 [<Route("[controller]")>]
-type CarController (logger : ILogger<CarController>, eventLogger: EventLogger, eventReader: EventReader) =
+type CarController (logger : ILogger<CarController>, redis: ConnectionMultiplexer) =
     inherit ControllerBase()
 
     /// <summary>Performs a modify part action on a car.</summary>
@@ -16,14 +19,9 @@ type CarController (logger : ILogger<CarController>, eventLogger: EventLogger, e
     /// <returns>An error message if an error has occurred.</returns>
     [<HttpPost("AddPart")>]
     member __.ModifyPart([<FromBody>] parameters: AddPartParameters) : Option<string> =
-        { 
-            Event = 
-                CarEvent(
-                    AddedPart(
-                        AddedPartEvent(parameters.TeamName, parameters.PartName)));
-            Timestamp = DateTime.Now;
-        }
-        |> eventLogger.Log
+        { TeamName = parameters.TeamName; PartName = parameters.PartName }
+        |> AddedPart
+        |> logEvent redis
 
         None
 
