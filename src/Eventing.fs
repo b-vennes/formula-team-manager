@@ -7,23 +7,13 @@ open FSharp.Json
 
 module Eventing =
 
-    type InitializedCarEvent = { TeamId: string; CarId: string }
+    type InitializedCarEvent = { TeamId: string; CarId: string; PartNames: list<string> }
 
-    let initializedCarEventKey = "initialized-car"
-
-    /// <summary>When a new part has been added to a car.</summary>
-    type AddedPartEvent = { TeamId: string; CarId: string; TeamName: string; PartName: string }
-
-    let addedPartEventKey = "added-part"
+    type AddedPartEvent = { CarId: string; PartName: string }
 
     type InitializedTeamEvent = { TeamId: string; TeamName: string; }
 
-    let initializedTeamEventKey = "initialized-team"
-
-    /// <summary>When the name of a team has changed.</summary>
-    type ChangedTeamNameEvent = { TeamId: string; NewTeamName: string }
-
-    let changedTeamNameEventKey = "changed-team-name"
+    type ChangedTeamNameEvent = { TeamId: string; TeamName: string }
 
     type FormulaEvent =
         | InitializedCar of InitializedCarEvent
@@ -31,85 +21,33 @@ module Eventing =
         | InitializedTeam of InitializedTeamEvent
         | ChangedTeamName of ChangedTeamNameEvent
 
-    /// <summary>When an event has occurred in formula team manager.</summary>
-    type LoggedEvent = { Event: FormulaEvent; Timestamp: DateTime; }
-
     let timestampKey = "timestamp"
 
-    let eventFieldKey = "event"
-
     let eventDetailsFieldKey = "event-details"
+    
+    let streamKey = "formula-team-manager"
 
-    type StreamType = 
-        | Car
-        | Team
+    module EventLogging =
 
-    let carStreamKey carId = "formula-team-manager-car-" + carId
+        let logEvent redis event =
+            let generateEntries serializedEvent =
+                    [|
+                        NameValueEntry(RedisValue(eventDetailsFieldKey), RedisValue(serializedEvent));
+                        NameValueEntry(RedisValue(timestampKey), RedisValue(Json.serialize DateTime.Now));
+                    |]
 
-    let teamStreamKey teamId = "formula-team-manager-team-" + teamId
+            generateEntries (Json.serialize event)
+            |> addToStream streamKey redis 
 
-    let logEvent redis event =
-        let generateEntries eventKey serializedEvent =
-                [|
-                    NameValueEntry(RedisValue(eventFieldKey), RedisValue(eventKey));
-                    NameValueEntry(RedisValue(eventDetailsFieldKey), RedisValue(serializedEvent));
-                    NameValueEntry(RedisValue(timestampKey), RedisValue(Json.serialize DateTime.Now));
-                |]
+    module EventReading = 
 
-        match event with
-        | InitializedCar initializedCarEvent ->
-            initializedCarEvent
-            |> Json.serialize
-            |> generateEntries initializedCarEventKey
-            |> addToStream (carStreamKey initializedCarEvent.CarId) redis
-        | AddedPart addedPartEvent ->
-            addedPartEvent
-            |> Json.serialize
-            |> generateEntries addedPartEventKey
-            |> addToStream (carStreamKey addedPartEvent.CarId) redis
-        | InitializedTeam initializedTeamEvent ->
-            initializedTeamEvent
-            |> Json.serialize
-            |> generateEntries initializedCarEventKey
-            |> addToStream (teamStreamKey initializedTeamEvent.TeamId) redis
-        | ChangedTeamName changedTeamNameEvent ->
-            changedTeamNameEvent
-            |> Json.serialize
-            |> generateEntries changedTeamNameEventKey
-            |> addToStream (teamStreamKey changedTeamNameEvent.TeamId) redis
+        let readEvents redis =
+            let toEvent (entry: StreamEntry) =
+                let valueFromKey (entry: StreamEntry) key =
+                    entry.Item(RedisValue(key)).ToString()
 
-    let readEvents redis stream =
-        let toEvent (entry: StreamEntry) =
-
-            let valueFromKey (entry: StreamEntry) key =
-                entry.Item(RedisValue(key)).ToString()
-
-            match (valueFromKey entry eventFieldKey) with 
-            | value when value = initializedCarEventKey ->
                 valueFromKey entry eventDetailsFieldKey
-                |> Json.deserialize<InitializedCarEvent>
-                |> InitializedCar
-                |> Ok
-            | value when value = addedPartEventKey ->
-                valueFromKey entry eventDetailsFieldKey
-                |> Json.deserialize<AddedPartEvent>
-                |> AddedPart
-                |> Ok
-            | value when value = initializedTeamEventKey ->
-                valueFromKey entry eventDetailsFieldKey
-                |> Json.deserialize<InitializedTeamEvent>
-                |> InitializedTeam
-                |> Ok
-            | value when value = changedTeamNameEventKey ->
-                valueFromKey entry eventDetailsFieldKey
-                |> Json.deserialize<ChangedTeamNameEvent>
-                |> ChangedTeamName
-                |> Ok
-            | _ -> Error "Error reading events."
+                |> Json.deserialize<FormulaEvent>
 
-        match stream with
-        | Car -> carStreamKey
-        | Team -> teamStreamKey
-        |> readAllFromStream redis
-        |> Array.map toEvent 
-            
+            readFromStream redis streamKey
+            |> Array.map toEvent

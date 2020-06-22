@@ -3,12 +3,12 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Results.fs" />
     <Compile Include="Stream.fs" />
     <Compile Include="Eventing.fs" />
-    <Compile Include="Controllers/Results.fs" />
-    <Compile Include="Controllers/Parameters.fs" />
+    <Compile Include="Queries.fs" />
+    <Compile Include="Actions.fs" />
     <Compile Include="Controllers/CarController.fs" />
-    <Compile Include="Controllers/DriverController.fs" />
     <Compile Include="Controllers/TeamController.fs" />
     <Compile Include="Startup.fs" />
     <Compile Include="Program.fs" />

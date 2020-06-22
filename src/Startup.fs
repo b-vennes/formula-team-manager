@@ -6,6 +6,8 @@ open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open StackExchange.Redis
+open System
+open Microsoft.AspNetCore.Cors.Infrastructure
 
 type Startup private () =
     new (configuration: IConfiguration) as this =
@@ -17,6 +19,14 @@ type Startup private () =
         // Add framework services.
         services.AddControllers() |> ignore
 
+        let corsAction (options: CorsOptions) =
+            let buildPolicy (builder: CorsPolicyBuilder) =
+                builder.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin() |> ignore
+
+            options.AddDefaultPolicy(new Action<CorsPolicyBuilder>(buildPolicy))
+
+        services.AddCors(new Action<CorsOptions>(corsAction)) |> ignore
+
         let redisConnection = ConnectionMultiplexer.Connect("localhost")
 
         services.AddSingleton(redisConnection) |> ignore
@@ -26,12 +36,12 @@ type Startup private () =
         if (env.IsDevelopment()) then
             app.UseDeveloperExceptionPage() |> ignore
 
-        app.UseRouting() |> ignore
+        app.UseCors() |> ignore
 
-        app.UseAuthorization() |> ignore
+        app.UseRouting() |> ignore
 
         app.UseEndpoints(fun endpoints ->
             endpoints.MapControllers() |> ignore
             ) |> ignore
 
-    member val Configuration : IConfiguration = null with get, set
+    member val Configuration: IConfiguration = null with get, set
