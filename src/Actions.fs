@@ -7,15 +7,15 @@ module Actions =
 
     type InitializeCarParameters() =
         let mutable teamId = ""
-        let mutable partNames = []
+        let mutable partNames = ""
 
         member __.TeamId
             with get () = teamId
             and set (value) = teamId <- value
 
         member __.PartNames
-            with get(): list<string> = partNames
-            and set(value: list<string>) = partNames <- value
+            with get() = partNames
+            and set(value) = partNames <- value
 
     type AddPartParameters() =
         let mutable carId =""
@@ -56,7 +56,7 @@ module Actions =
 
     let handleAction redis actionParameters =
         let handleInitializeCarAction (parameters: InitializeCarParameters) =
-            { TeamId = parameters.TeamId; CarId = Guid.NewGuid().ToString() ; PartNames = parameters.PartNames }
+            { TeamId = parameters.TeamId; CarId = Guid.NewGuid().ToString() ; PartNames = parameters.PartNames.Split(",") |> Array.toList }
             |> InitializedCar
             |> EventLogging.logEvent redis
             |> Ok

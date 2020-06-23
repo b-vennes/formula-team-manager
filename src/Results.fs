@@ -9,3 +9,5 @@ module Results =
     type CarNotFoundError = { CarId: string }
 
     type TeamNotFoundError = { TeamId: string }
+
+    type TeamInformation = { TeamId: string; TamName: string; Cars: list<Car> }
