@@ -1,9 +1,11 @@
 # Visual Studio Code
 .ionide
+.fake
 .vscode
 
 # Visual Studio
 .vs
+*.sln
 
 # .Net build files
 [Bb]in

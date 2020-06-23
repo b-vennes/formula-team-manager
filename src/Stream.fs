@@ -3,19 +3,13 @@ namespace FormulaTeamManager
 open StackExchange.Redis
 open System
 
-/// <summary>Handles interactions with the event stream.</summary>
-/// <param name="redis">The redis connection to use.<param>
-type Stream (redis: ConnectionMultiplexer) =
-    let streamKey = RedisKey("formula-team-manager")
+module Stream =
 
-    /// <summary>Adds an event to the stream.</summary>
-    /// <param name="entries">An array of name-value entries containing event fields.</param>
-    member __.Add (entries: NameValueEntry[]) = 
+    let addToStream streamKey (redis: ConnectionMultiplexer) entries =
         redis.GetDatabase()
-            .StreamAdd(streamKey, entries)
+            .StreamAdd(RedisKey(streamKey), entries)
+        |> Ok
 
-    /// <summary>Reads all events from the stream.</summary>
-    /// <returns>An array of stream entries containing the events.</returns>
-    member __.ReadAll () =
+    let readFromStream (redis: ConnectionMultiplexer) (streamKey: string) =
         redis.GetDatabase()
-            .StreamRange(streamKey, Nullable(RedisValue("-")), Nullable(RedisValue("+")))
+            .StreamRange(RedisKey(streamKey), Nullable(RedisValue("-")), Nullable(RedisValue("+")))

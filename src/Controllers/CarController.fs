@@ -1,67 +1,50 @@
 namespace FormulaTeamManager.Controllers
 
-open System
 open Microsoft.AspNetCore.Mvc
 open Microsoft.Extensions.Logging
-open FormulaTeamManager
+open FormulaTeamManager.Actions
+open FormulaTeamManager.Queries
+open StackExchange.Redis
+open FormulaTeamManager.Results
 
-/// <summary>Handles car command and query requests.</summary>
 [<ApiController>]
 [<Route("[controller]")>]
-type CarController (logger : ILogger<CarController>, eventLogger: EventLogger, eventReader: EventReader) =
+type CarController (logger: ILogger<CarController>, redis: ConnectionMultiplexer) =
     inherit ControllerBase()
 
-    /// <summary>Performs a modify part action on a car.</summary>
-    /// <param name="parameters">The add part parameters.</param>
-    /// <returns>An error message if an error has occurred.</returns>
-    [<HttpPost("AddPart")>]
-    member __.ModifyPart([<FromBody>] parameters: AddPartParameters) : Option<string> =
-        { 
-            Event = 
-                CarEvent(
-                    AddedPart(
-                        AddedPartEvent(parameters.TeamName, parameters.PartName)));
-            Timestamp = DateTime.Now;
-        }
-        |> eventLogger.Log
+    [<HttpGet("QueryById/{carId}")>]
+    member this.QueryById(carId: string) =
+        let handleResult result =
+            match result with
+            | Ok car -> car |> this.Ok :> IActionResult
+            | Error -> this.NotFound() :> IActionResult
 
-        None
-
-    /// <summary>Queries for car information and history by team name.</summary>
-    /// <param name="teamName">The name of the car's team.</param>
-    /// <returns>The car information.</returns>
-    [<HttpGet("{teamName}")>]
-    member __.GetCar(teamName: string) : Car =
-
-        let foldCarEventIntoCar car event =
-
-            match event with
-
-                | AddedPart(addedPartEvent) 
-                    when addedPartEvent.TeamName.ToLower() = car.Teams.Head.ToLower() -> 
-
-                        { car with Parts = (List.append car.Parts [addedPartEvent.PartName]) |> List.distinct }
-
-                | _ -> car
-
-        let foldTeamEventIntoCar car event =
+        queryCar redis carId |> handleResult
         
-            match event with
 
-                | ChangedTeamName(changedTeamNameEvent)
-                    when changedTeamNameEvent.NewTeamName.ToLower() = car.Teams.Head.ToLower() ->
+    [<HttpGet("QueryByTeamId/{teamId}")>]
+    member this.QueryByTeamId(teamId: string) =
+        let handleResult result =
+            match result with
+            | Ok cars -> cars |> this.Ok :> IActionResult
+            | Error -> this.NotFound() :> IActionResult
 
-                        { car with Teams = List.append [changedTeamNameEvent.PreviousTeamName] car.Teams }
+        queryCars redis teamId |> handleResult
 
-                | _ -> car
+    [<HttpPost("Initialize")>]
+    member this.Initialize([<FromBody>] parameters: InitializeCarParameters) =
+        let handleResult result =
+            match result with
+            | Ok -> this.Ok() :> IActionResult
+            | Error e -> this.StatusCode(500, e) :> IActionResult
 
-        let foldEventIntoCar car event =
+        handleAction redis (InitializeCar(parameters)) |> handleResult
 
-            match event with
-            | CarEvent(carEvent) -> foldCarEventIntoCar car carEvent
-            | TeamEvent(teamEvent) -> foldTeamEventIntoCar car teamEvent
-            | _ -> car
+    [<HttpPost("AddPart")>]
+    member this.AddPart([<FromBody>] parameters: AddPartParameters) = 
+        let handleResult result =
+            match result with
+            | Ok -> this.Ok() :> IActionResult
+            | Error e -> this.StatusCode(500, e) :> IActionResult
 
-        eventReader.ReadEvents()
-        |> Array.rev
-        |> Array.fold foldEventIntoCar { Teams = [teamName]; Parts = [] }
+        handleAction redis (AddPart(parameters)) |> handleResult

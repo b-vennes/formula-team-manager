@@ -1,30 +1,48 @@
 namespace FormulaTeamManager.Controllers
 
-open System
 open Microsoft.AspNetCore.Mvc
 open Microsoft.Extensions.Logging
-open FormulaTeamManager
+open FormulaTeamManager.Actions
+open FormulaTeamManager.Queries
+open StackExchange.Redis
 
-/// <summary>Handles command and query requests for teams.</summary>
-/// <param name="logger">The standard logging utility.</param>
-/// <param name="eventLogger">The event logging utility.</param>
 [<ApiController>]
 [<Route("[controller]")>]
-type TeamController (logger : ILogger<TeamController>, eventLogger: EventLogger) =
+type TeamController (logger: ILogger<TeamController>, redis: ConnectionMultiplexer) =
     inherit ControllerBase()
 
-    /// <summary>Performs a team name change.</summary>
-    /// <param name="parameters">The name change parameters.</param>
-    /// <returns>An error message if an error has occurred.</returns>
-    [<HttpPost("ChangeTeamName")>]
-    member __.ChangeTeamName([<FromBody>] parameters: ChangeTeamNameParameters) : Option<string> =
-        {
-            Event = 
-                TeamEvent(
-                    ChangedTeamName(
-                        ChangedTeamNameEvent(parameters.PreviousTeamName, parameters.NewTeamName)));
-            Timestamp = DateTime.Now;
-        }
-        |> eventLogger.Log
+    [<HttpGet("QueryById/{id}")>]
+    member this.QueryById(id: string) =
+        let handleResult result =
+            match result with
+            | Ok team -> team |> this.Ok :> IActionResult
+            | Error -> "Team not found." |> this.NotFound :> IActionResult
 
-        None
+        queryTeam redis id |> handleResult
+
+    [<HttpGet("QueryAll")>]
+    member this.QueryAll() =
+        let handleResult result =
+            match result with
+            | Ok teams -> teams |> this.Ok :> IActionResult
+            | Error -> this.StatusCode(500) :> IActionResult
+
+        queryTeams redis |> handleResult
+
+    [<HttpPost("Initialize")>]
+    member this.Initialize(parameters: InitializeTeamParameters) =
+        let handleResult result =
+            match result with
+            | Ok -> this.Ok() :> IActionResult
+            | Error -> this.StatusCode(500) :> IActionResult
+
+        handleAction redis (InitializeTeam(parameters)) |> handleResult
+
+    [<HttpPost("ChangeTeamName")>]
+    member this.ChangeTeamName(parameters: ChangeTeamNameParameters) =
+        let handleResult result =
+            match result with
+            | Ok -> this.Ok() :> IActionResult
+            | Error -> this.StatusCode(500) :> IActionResult
+
+        handleAction redis (ChangeTeamName(parameters)) |> handleResult
