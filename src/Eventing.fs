@@ -33,7 +33,7 @@ module Eventing =
             let generateEntries serializedEvent =
                     [|
                         NameValueEntry(RedisValue(eventDetailsFieldKey), RedisValue(serializedEvent));
-                        NameValueEntry(RedisValue(timestampKey), RedisValue(DateTime.Now.ToLongDateString()));
+                        NameValueEntry(RedisValue(timestampKey), RedisValue(DateTime.Now.ToString()));
                     |]
 
             generateEntries (Json.serialize event)

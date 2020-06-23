@@ -6,22 +6,19 @@ open FormulaTeamManager.Results
 module Queries =
 
     let queryTeams redis =
+    
         let foldEventIntoTeams teams event =
             match event with
             | InitializedTeam initializedTeamEvent -> 
                 [{ Team.Id = initializedTeamEvent.TeamId; TeamName = initializedTeamEvent.TeamName }]
                 |> List.append teams
             | ChangedTeamName changedTeamNameEvent ->
-                let replaceIfMatchingIds (replacement: Team) (team: Team) =
-                    if team.Id = replacement.Id
-                        then replacement
+                let replaceNameIfMatchingIds (team: Team) =
+                    if team.Id = changedTeamNameEvent.TeamId
+                        then { team with TeamName = changedTeamNameEvent.TeamName }
                     else team
                     
-                let replaceTeam teams team =
-                    teams
-                    |> List.map (replaceIfMatchingIds team)
-
-                replaceTeam teams { Team.Id = changedTeamNameEvent.TeamId; TeamName = changedTeamNameEvent.TeamName }
+                teams |> List.map replaceNameIfMatchingIds
             | _ -> teams
 
         EventReading.readEvents redis
