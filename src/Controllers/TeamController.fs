@@ -17,7 +17,6 @@ type TeamController (logger: ILogger<TeamController>, redis: ConnectionMultiplex
 
     [<HttpGet("QueryAll")>]
     member __.QueryAll() =
-        logger.LogInformation "test" |> ignore
         queryTeams redis
 
     [<HttpPost("Initialize")>]
